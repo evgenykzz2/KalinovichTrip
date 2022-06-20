@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
+#include <set>
 
-#define room_count 31
-#define action_count  132
+#define room_count 39
+#define action_count  150
 
 struct Room
 {
@@ -12,6 +13,7 @@ struct Room
 
 extern const Room s_room[room_count];
 extern int room_fight_complete[room_count];
+extern std::set<int> room_used_item[room_count];
 
 #define AT_LOOT       0
 #define AT_GOTO_ROOM  1

@@ -35,6 +35,45 @@ void ItemDump()
     }
 }
 
+#define INPUT_RECORD
+
+#ifdef INPUT_RECORD
+std::vector<int> input_history;
+int s_record[96] =
+{
+    1,1,1,1,1,0,1,1,1,0,1,2,1,1,1,0,1,2,0,1,3,1,1,1,0,2,2,2,0,1,1,1,1,2,1,3,0,0,7,2,1,1,1,1,1,1,0,4,7,1,4,4,4,4,0,0,1,1,1,1,0,4,0,0,4,2,0,1,0,2,2,0,2,0,2,2,0,0,3,1,2,4,7,2,1,1,0,1,4,0,0,1,0,4,4,3,
+};
+int s_record_index = 0;
+#endif
+
+int ReadInput()
+{
+    int vvod;
+#ifdef INPUT_RECORD
+    if (s_record_index < sizeof(s_record) / sizeof(int))
+    {
+        vvod = s_record[s_record_index];
+        s_record_index++;
+    }
+    else
+    {
+        std::cin >> vvod;
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+    }
+    input_history.push_back(vvod);
+    std::wcout << COLOR_BLUE << input_history.size() << COLOR_NONE << std::endl;
+    for (size_t i = 0; i < input_history.size(); ++i)
+        std::wcout << input_history[i] << L",";
+    std::wcout << std::endl;
+#else
+    std::cin >> vvod;
+    std::cin.clear();
+    std::cin.ignore(INT_MAX, '\n');
+#endif
+    return vvod;
+}
+
 int main()
 {
     setlocale(LC_ALL, "Russian");
@@ -48,7 +87,10 @@ int main()
     //ItemDump();
 game_reset:
     for (int i = 0; i < room_count; ++i)
+    {
         room_fight_complete[i] = 0;
+        room_used_item[i].clear();
+    }
 
     for (int i = 0; i < action_count; ++i)
         room_action_complete[i] = 0;
@@ -87,6 +129,14 @@ main_loop:
                 if (player_slot[i] != -1)
                     player_power = player_power + s_item[player_slot[i]].level;
             }
+            if (player_power - s_enemy[enemy].level <= 0 &&
+                s_enemy[enemy].level +  s_enemy[enemy].damage - player_power <= 0)
+            {
+                std::wcout << COLOR_YELLOW << L"Ваши силы равны!" << COLOR_NONE << std::endl;
+                std::wcout << COLOR_YELLOW << L"Борьба длится слишком долго" << COLOR_NONE << std::endl;
+                std::wcout << COLOR_YELLOW << L"Вы состарились и умерли вместе" << COLOR_NONE << std::endl;
+                goto game_reset;
+            }
             for (int i = 0; i < 1000; ++i)
             {
                 int damage = player_power - s_enemy[enemy].level;
@@ -112,14 +162,13 @@ main_loop:
                         player_money = player_money + s_enemy[enemy].money;
                         std::wcout << COLOR_YELLOW << L"Получено "
                             << s_enemy[enemy].money << L"$, всего " << player_money << L"$" << COLOR_NONE << std::endl;
-                        inventory.push_back(s_enemy[enemy].loot);
                     }
                     room_fight_complete[room] = 1;
                     goto room_input;
                 }
                 std::wcout << std::endl;
 
-                damage = s_enemy[enemy].damage - player_power;
+                damage = s_enemy[enemy].level + s_enemy[enemy].damage - player_power;
                 if (damage < 0)
                     damage = 0;
                 std::wcout << s_enemy[enemy].name << L" наносит " << damage << L" урона" << std::endl;
@@ -150,10 +199,7 @@ main_loop:
             }
         }
         std::wcout << L"  " << 0 << "-" << L"Меню" << std::endl;
-        int vvod;
-        std::cin >> vvod;
-        std::cin.clear();
-        std::cin.ignore(INT_MAX, '\n');
+        int vvod = ReadInput();
         
         number = 1;
         for (int i = 0; i < action_count; ++i)
@@ -214,6 +260,53 @@ main_loop:
                         room_action_complete[i] = 1;
                         goto main_loop;
                     }
+                    else if (s_action[i].type == AT_USE_ITEM)
+                    {
+                        int item = s_action[i].result;
+                        int index = -1;
+                        for (size_t n = 0; n < inventory.size(); ++n)
+                        {
+                            if (inventory[n] == item)
+                            {
+                                index = n;
+                                break;
+                            }
+                        }
+                        if (index == -1)
+                            std::wcout << COLOR_RED << L"У вас нет предмета " << s_item[item].name << COLOR_NONE << std::endl;
+                        else
+                        {
+                            inventory.erase(inventory.begin() + index);
+                            if (!s_action[i].message.empty())
+                                std::wcout << s_action[i].message << std::endl;
+                            room_used_item[room].insert(item);
+                        }
+                        goto main_loop;
+                    }
+                    else if (s_action[i].type == AT_GAME_OVER)
+                    {
+                        if (room_used_item[room].find(s_action[i].result) != room_used_item[room].end())
+                        {
+                            std::wcout << s_action[i].message << std::endl;
+                            goto main_loop;
+                        }
+                        else
+                        {
+                            std::wcout << COLOR_CYAN << L"Спасибо маме" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_CYAN << L"мам я так заеба**** это делать" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_CYAN << L"програмистом быть сложно" << COLOR_NONE << std::endl;
+                            std::wcout << separator << std::endl;
+                            std::wcout << COLOR_GREEN << L"Молодец" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_WHITE << L"Программист:" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_WHITE << L"      Сашик" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_GREEN << L"Гейм-дизайнер" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_GREEN << L"      Сашик" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_GREEN << L"Директор" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_GREEN << L"      Сашик" << COLOR_NONE << std::endl;
+                            std::wcout << COLOR_GREEN << L"Удачи" << COLOR_NONE << std::endl;
+                            goto game_reset;
+                        }
+                    }
                     else if (s_action[i].type == AT_HEAL)
                     {
                         std::wcout << s_action[i].message << std::endl;
@@ -231,6 +324,19 @@ main_loop:
                             std::wcout << s_action[i].message << std::endl;
                         std::wcout << L"Вы получили " << s_action[i].result << L"$" << std::endl;
                         player_money = player_money + s_action[i].result;
+                        std::wcout << COLOR_YELLOW << L"У вас всего " << player_money << L"$" << COLOR_NONE << std::endl;
+                        room_action_complete[i] = 1;
+                        goto main_loop;
+                    }
+                    else if (s_action[i].type == AT_LOST_MONEY)
+                    {
+                        if (!s_action[i].message.empty())
+                            std::wcout << s_action[i].message << std::endl;
+                        int lost = s_action[i].result;
+                        if (lost > player_money)
+                            lost = player_money;
+                        std::wcout << L"Вы потеряли " << lost << L"$" << std::endl;
+                        player_money = player_money - lost;
                         std::wcout << COLOR_YELLOW << L"У вас всего " << player_money << L"$" << COLOR_NONE << std::endl;
                         room_action_complete[i] = 1;
                         goto main_loop;
@@ -253,10 +359,7 @@ main_loop:
                             }
                         }
                         std::wcout << L"  " << 0 << "-" << std::setw(10) << L"Отмена" << COLOR_NONE << std::endl;
-                        int vvod;
-                        std::cin >> vvod;
-                        std::cin.clear();
-                        std::cin.ignore(INT_MAX, '\n');
+                        int vvod = ReadInput();
                         if (vvod == 0)
                         {
                             goto main_loop;
@@ -307,10 +410,7 @@ main_loop:
                             number = number + 1;
                         }
                         std::wcout << L"  " << 0 << "-" << std::setw(10) << L"Отмена" << COLOR_NONE << std::endl;
-                        int vvod;
-                        std::cin >> vvod;
-                        std::cin.clear();
-                        std::cin.ignore(INT_MAX, '\n');
+                        int vvod = ReadInput();
                         if (vvod == 0)
                         {
                             goto main_loop;
@@ -376,10 +476,7 @@ main_loop:
             }
             std::wcout << COLOR_NONE;
 
-            int vvod;
-            std::cin >> vvod;
-            std::cin.clear();
-            std::cin.ignore(INT_MAX, '\n');
+            int vvod = ReadInput();
             if (vvod > 0 && vvod <= inventory.size())
             {
                 int i = vvod - 1;
