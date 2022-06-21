@@ -3,7 +3,7 @@
 #include <set>
 
 #define room_count 39
-#define action_count  150
+#define action_count  156
 
 struct Room
 {

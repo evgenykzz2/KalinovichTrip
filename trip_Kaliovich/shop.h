@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-#define shop_count 5
+#define shop_count 6
 
 
 struct Shop

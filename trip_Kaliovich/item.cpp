@@ -67,9 +67,9 @@ const Item s_item[item_count] =
     {L"Копье",            USAGE_WEAPON,      2,  2, L""},                         //61+    
     {L"Лопата",           USAGE_WEAPON,      3,  3, L""},                         //62+    
     {L"Сковорода",        USAGE_WEAPON,      4,  4, L""},                         //63    
-    {L"Топор",            USAGE_WEAPON,      5,  5, L""},                         //64    
-    {L"Вилы",             USAGE_WEAPON,      6,  6, L""},                         //65    
-    {L"Меч",              USAGE_WEAPON,      7,  7, L""},                         //66
+    {L"Топор",            USAGE_WEAPON,      5,  9, L""},                         //64    
+    {L"Вилы",             USAGE_WEAPON,      6,  13, L""},                        //65    
+    {L"Меч",              USAGE_WEAPON,      7,  18, L""},                        //66
     {L"Диск",             USAGE_NONE,        0,  3, L""},                         //67
     {L"Клавиатура",       USAGE_NONE,        0,  2, L""},                         //68
     {L"Дневник",          USAGE_NONE,        0,  4, L""},                         //69
